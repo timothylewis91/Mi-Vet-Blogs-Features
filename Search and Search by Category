@@ -1,0 +1,134 @@
+const [searchQuery, setSearchQuery] = useState("");
+  const [pageData, setPageData] = useState({
+    arrayOfBlog: [],
+    blogComponents: [],
+    pageIndex: 0,
+    pageSize: 6,
+    totalCount: 0,
+    current: 1,
+  });
+  
+  const onBlogSearch = (e) => {
+    e.preventDefault();
+    _logger(searchQuery);
+    if (searchQuery === "") {
+      blogService
+        .getPage(pageData.pageIndex, pageData.pageSize)
+        .then(onGetBlogSuccess)
+        .catch(onGetBlogError);
+    } else {
+      blogService
+        .searchQuery(pageData.pageIndex, pageData.pageSize, searchQuery)
+        .then(onSearchBlogSuccess)
+        .catch(onSearchBlogError);
+    }
+  };
+
+  const onSearchBlogSuccess = (response) => {
+    _logger("searching the event", response);
+    toastr.success("Search complete");
+    setPageData((prevState) => {
+      const blogState = { ...prevState };
+      blogState.arrayOfBlog = response.item.pagedItems;
+      blogState.totalCount = response.item.totalCount;
+      blogState.blogComponents = blogState.arrayOfBlog.map(mapBlog);
+      return blogState;
+    });
+  };
+
+  const onSearchBlogError = (err) => {
+    toastr.success("Search not found");
+  };
+  const [blogCatergory, setBlogCatergory] = useState({ mappedBlogCat: [] });
+
+  useEffect(() => {
+    blogService
+      .getPage(pageData.pageIndex, pageData.pageSize)
+      .then(onGetBlogSuccess)
+      .catch(onGetBlogError);
+  }, [pageData.pageIndex, pageData.pageSize]);
+
+  useEffect(() => {
+    lookUpService
+      .LookUp(["BlogTypes"])
+      .then(onCategorySuccess)
+      .catch(onGetBlogError);
+  }, []);
+
+  const onCategorySuccess = (response) => {
+    _logger(response);
+    if (response?.item?.blogTypes) {
+      setBlogCatergory((prevState) => {
+        const bd = { ...prevState };
+        let category = response.item.blogTypes;
+        bd.mappedBlogCat = category.map(mapCategory);
+        return bd;
+      });
+    }
+  };
+
+   <React.Fragment>
+      <div className="pt-9 pb-9 bg-white ">
+        <Container>
+          <Row>
+            <Col
+              lg={{ span: 10, offset: 1 }}
+              xl={{ span: 8, offset: 2 }}
+              md={12}
+              sm={12}
+            >
+              <div className="text-center mb-5">
+                <h1 className=" display-2 fw-bold">Blogs</h1>
+                <p className="lead">
+                  Read latest horse news, learn expert horse care tips & improve
+                  your riding with tips from pros. Health news, veterinary
+                  advice, and educational tools to keep your horse healthy.
+                </p>
+              </div>
+
+              <Form className="row px-md-20" onSubmit={onBlogSearch}>
+                <Form.Group
+                  className="mb-3 col ps-0 ms-2 ms-md-0"
+                  controlId="formBasicEmail"
+                >
+                  <Form.Control
+                    type="search"
+                    placeholder="Search"
+                    onChange={onSearchBlogChange}
+                  />
+                </Form.Group>
+                <Form.Group
+                  className="mb-3 col-auto ps-0"
+                  controlId="formSubmitButton"
+                >
+                  <Button variant="primary" type="submit">
+                    Search
+                  </Button>
+                </Form.Group>
+              </Form>
+              <select
+                className=" blogDropdown-category form-group"
+                onChange={onBlogCatergory}
+              >
+                <option value={""}>Please select</option>
+                {blogCatergory?.mappedBlogCat}
+              </select>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+      <div className="pb-8 bg-white">
+        <Container>
+          {restrictedToAdmin()}
+          <Row>{pageData.blogComponents}</Row>
+        </Container>
+        <Pagination
+          className="blog-card-pagination mx-auto"
+          onChange={onBlogChange}
+          current={pageData.pageIndex + 1}
+          total={pageData.totalCount}
+          pageSize={pageData.pageSize}
+          locale={locale}
+        />
+      </div>
+    </React.Fragment>
